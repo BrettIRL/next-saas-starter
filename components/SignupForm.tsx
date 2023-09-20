@@ -1,7 +1,8 @@
 'use client';
 
-import * as React from 'react';
-
+import { signIn } from 'next-auth/react';
+import { useState } from 'react';
+import Redirect from './Redirect';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/ui/icons';
 import { Input } from '@/components/ui/input';
@@ -9,22 +10,53 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
 interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {}
+interface SignupFormFields {
+  email: string;
+  password: string;
+}
 
 export function SignupForm({ className, ...props }: UserAuthFormProps) {
-  const [isLoading, setIsLoading] = React.useState<boolean>(false);
+  const [fields, setFields] = useState<SignupFormFields>({
+    email: '',
+    password: '',
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  async function onSubmit(event: React.SyntheticEvent) {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setFields(fields => ({ ...fields, [id]: value }));
+  };
+
+  const handleSubmit = async (event: React.SyntheticEvent) => {
     event.preventDefault();
+    const { email, password } = fields;
     setIsLoading(true);
 
-    setTimeout(() => {
+    if (!email || !password) {
       setIsLoading(false);
-    }, 3000);
-  }
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/users/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (res.ok) {
+        signIn('credentials', { email, password, callbackUrl: '/' });
+      }
+    } catch (error) {}
+
+    setIsLoading(false);
+  };
 
   return (
     <div className={cn('grid gap-6', className)} {...props}>
-      <form onSubmit={onSubmit}>
+      <form onSubmit={handleSubmit}>
         <div className="grid gap-2">
           <div className="grid gap-1">
             <Label className="sr-only" htmlFor="email">
@@ -38,6 +70,7 @@ export function SignupForm({ className, ...props }: UserAuthFormProps) {
               autoComplete="email"
               autoCorrect="off"
               disabled={isLoading}
+              onChange={handleChange}
             />
           </div>
           <div className="grid gap-1">
@@ -51,6 +84,7 @@ export function SignupForm({ className, ...props }: UserAuthFormProps) {
               autoCapitalize="none"
               autoCorrect="off"
               disabled={isLoading}
+              onChange={handleChange}
             />
           </div>
           <Button disabled={isLoading}>
