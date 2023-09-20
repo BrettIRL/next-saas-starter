@@ -19,6 +19,7 @@
           "order": "asc",
           "caseInsensitive": true
         },
+        "pathGroupsExcludedImportTypes": ["react"],
         "warnOnUnassignedImports": true
       }
     ]
