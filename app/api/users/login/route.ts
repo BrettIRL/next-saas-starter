@@ -1,4 +1,4 @@
-import { compare } from 'bcrypt';
+import { compare } from 'bcryptjs';
 import { NextResponse } from 'next/server';
 import { getUserByEmail } from '@/app/db/repositories/users';
 
