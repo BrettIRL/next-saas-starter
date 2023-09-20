@@ -1,55 +1,68 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/ui/icons';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { toast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 
 interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {}
-interface LoginFormFields {
-  email: string;
-  password: string;
-}
+
+const userAuthSchema = z
+  .object({
+    email: z.string().email(),
+    password: z.string().min(6),
+  })
+  .required();
+
+type FormData = z.infer<typeof userAuthSchema>;
 
 export function LoginForm({ className, ...props }: UserAuthFormProps) {
-  const [fields, setFields] = useState<LoginFormFields>({
-    email: '',
-    password: '',
-  });
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormData>({
+    resolver: zodResolver(userAuthSchema),
+  });
   const searchParams = useSearchParams();
+  const router = useRouter();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setFields(fields => ({ ...fields, [id]: value }));
-  };
-
-  const onSubmit = async (event: React.SyntheticEvent) => {
-    event.preventDefault();
-    const { email, password } = fields;
+  const onSubmit = async (data: FormData) => {
     setIsLoading(true);
 
-    if (!email || !password) {
-      setIsLoading(false);
-      return;
-    }
-
-    await signIn('credentials', {
-      email,
-      password,
+    const result = await signIn('credentials', {
+      email: data.email.toLowerCase(),
+      password: data.password,
+      redirect: false,
       callbackUrl: searchParams?.get('from') || '/',
     });
 
     setIsLoading(false);
+
+    if (!result?.ok || result?.error) {
+      return toast({
+        title: 'Something went wrong',
+        description: 'Your log in request failed. Please try again.',
+        variant: 'destructive',
+      });
+    }
+
+    // NOTE: Using router.push because redirect wouldn't work
+    router.push(searchParams?.get('from') || '/');
   };
 
   return (
     <div className={cn('grid gap-6', className)} {...props}>
-      <form onSubmit={onSubmit}>
+      <form onSubmit={handleSubmit(onSubmit)}>
         <div className="grid gap-2">
           <div className="grid gap-1">
             <Label className="sr-only" htmlFor="email">
@@ -63,8 +76,13 @@ export function LoginForm({ className, ...props }: UserAuthFormProps) {
               autoComplete="email"
               autoCorrect="off"
               disabled={isLoading}
-              onChange={handleChange}
+              {...register('email')}
             />
+            {errors?.email && (
+              <p className="px-1 text-xs text-red-600">
+                {errors.email.message}
+              </p>
+            )}
           </div>
           <div className="grid gap-1">
             <Label className="sr-only" htmlFor="password">
@@ -77,8 +95,13 @@ export function LoginForm({ className, ...props }: UserAuthFormProps) {
               autoCapitalize="none"
               autoCorrect="off"
               disabled={isLoading}
-              onChange={handleChange}
+              {...register('password')}
             />
+            {errors?.password && (
+              <p className="px-1 text-xs text-red-600">
+                {errors.password.message}
+              </p>
+            )}
           </div>
           <Button disabled={isLoading}>
             {isLoading && (

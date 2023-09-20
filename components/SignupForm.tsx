@@ -1,8 +1,10 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
 import { signIn } from 'next-auth/react';
 import { useState } from 'react';
-import Redirect from './Redirect';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/ui/icons';
 import { Input } from '@/components/ui/input';
@@ -15,27 +17,57 @@ interface SignupFormFields {
   password: string;
 }
 
+const userAuthSchema = z
+  .object({
+    email: z.string().email(),
+    password: z.string(),
+  })
+  .required();
+type FormData = z.infer<typeof userAuthSchema>;
+
 export function SignupForm({ className, ...props }: UserAuthFormProps) {
-  const [fields, setFields] = useState<SignupFormFields>({
-    email: '',
-    password: '',
-  });
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormData>({
+    resolver: zodResolver(userAuthSchema),
+  });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setFields(fields => ({ ...fields, [id]: value }));
-  };
-
-  const handleSubmit = async (event: React.SyntheticEvent) => {
-    event.preventDefault();
-    const { email, password } = fields;
+  // const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const { id, value } = e.target;
+  //   setFields(fields => ({ ...fields, [id]: value }));
+  // };
+  //
+  // const handleSubmit = async (event: React.SyntheticEvent) => {
+  //   event.preventDefault();
+  //   const { email, password } = fields;
+  //   setIsLoading(true);
+  //
+  //   if (!email || !password) {
+  //     setIsLoading(false);
+  //     return;
+  //   }
+  //
+  //   try {
+  //     const res = await fetch('/api/users/signup', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({ email, password }),
+  //     });
+  //
+  //     if (res.ok) {
+  //       signIn('credentials', { email, password, callbackUrl: '/' });
+  //     }
+  //   } catch (error) {}
+  //
+  //   setIsLoading(false);
+  // };  } = useForm<FormData>({
+  const onSubmit = async (data: FormData) => {
     setIsLoading(true);
-
-    if (!email || !password) {
-      setIsLoading(false);
-      return;
-    }
 
     try {
       const res = await fetch('/api/users/signup', {
@@ -43,11 +75,15 @@ export function SignupForm({ className, ...props }: UserAuthFormProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: data.email, password: data.password }),
       });
 
       if (res.ok) {
-        signIn('credentials', { email, password, callbackUrl: '/' });
+        signIn('credentials', {
+          email: data.email,
+          password: data.password,
+          callbackUrl: '/',
+        });
       }
     } catch (error) {}
 
@@ -56,7 +92,7 @@ export function SignupForm({ className, ...props }: UserAuthFormProps) {
 
   return (
     <div className={cn('grid gap-6', className)} {...props}>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit(onSubmit)}>
         <div className="grid gap-2">
           <div className="grid gap-1">
             <Label className="sr-only" htmlFor="email">
