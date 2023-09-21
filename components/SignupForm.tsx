@@ -5,25 +5,23 @@ import { signIn } from 'next-auth/react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { toast } from './ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/ui/icons';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { signUp } from '@/lib/signup';
 import { cn } from '@/lib/utils';
 
 interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {}
-interface SignupFormFields {
-  email: string;
-  password: string;
-}
 
-const userAuthSchema = z
+const signUpSchema = z
   .object({
-    email: z.string().email(),
-    password: z.string(),
+    email: z.string().email().nonempty('Email is required'),
+    password: z.string().nonempty('Password is required'),
   })
   .required();
-type FormData = z.infer<typeof userAuthSchema>;
+type SignupFormData = z.infer<typeof signUpSchema>;
 
 export function SignupForm({ className, ...props }: UserAuthFormProps) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -31,63 +29,41 @@ export function SignupForm({ className, ...props }: UserAuthFormProps) {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<FormData>({
-    resolver: zodResolver(userAuthSchema),
+  } = useForm<SignupFormData>({
+    resolver: zodResolver(signUpSchema),
   });
 
-  // const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const { id, value } = e.target;
-  //   setFields(fields => ({ ...fields, [id]: value }));
-  // };
-  //
-  // const handleSubmit = async (event: React.SyntheticEvent) => {
-  //   event.preventDefault();
-  //   const { email, password } = fields;
-  //   setIsLoading(true);
-  //
-  //   if (!email || !password) {
-  //     setIsLoading(false);
-  //     return;
-  //   }
-  //
-  //   try {
-  //     const res = await fetch('/api/users/signup', {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       body: JSON.stringify({ email, password }),
-  //     });
-  //
-  //     if (res.ok) {
-  //       signIn('credentials', { email, password, callbackUrl: '/' });
-  //     }
-  //   } catch (error) {}
-  //
-  //   setIsLoading(false);
-  // };  } = useForm<FormData>({
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (data: SignupFormData) => {
     setIsLoading(true);
-
     try {
-      const res = await fetch('/api/users/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: data.email, password: data.password }),
+      const response = await signUp({
+        email: data.email,
+        password: data.password,
       });
 
-      if (res.ok) {
-        signIn('credentials', {
-          email: data.email,
-          password: data.password,
-          callbackUrl: '/',
+      if (!response.ok) {
+        return toast({
+          title: 'Something went wrong',
+          description: 'Your sign up request failed. Please try again.',
+          variant: 'destructive',
         });
       }
-    } catch (error) {}
 
-    setIsLoading(false);
+      await signIn('credentials', {
+        email: data.email,
+        password: data.password,
+        callbackUrl: '/',
+      });
+
+      setIsLoading(false);
+    } catch (error) {
+      setIsLoading(false);
+      return toast({
+        title: 'Something went wrong',
+        description:
+          'Unable to make the request. Please check your connection.',
+      });
+    }
   };
 
   return (
@@ -106,8 +82,13 @@ export function SignupForm({ className, ...props }: UserAuthFormProps) {
               autoComplete="email"
               autoCorrect="off"
               disabled={isLoading}
-              onChange={handleChange}
+              {...register('email')}
             />
+            {errors?.email && (
+              <p className="px-1 text-xs text-red-600">
+                {errors.email.message}
+              </p>
+            )}
           </div>
           <div className="grid gap-1">
             <Label className="sr-only" htmlFor="password">
@@ -120,8 +101,13 @@ export function SignupForm({ className, ...props }: UserAuthFormProps) {
               autoCapitalize="none"
               autoCorrect="off"
               disabled={isLoading}
-              onChange={handleChange}
+              {...register('password')}
             />
+            {errors?.password && (
+              <p className="px-1 text-xs text-red-600">
+                {errors.password.message}
+              </p>
+            )}
           </div>
           <Button disabled={isLoading}>
             {isLoading && (

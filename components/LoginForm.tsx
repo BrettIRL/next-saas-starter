@@ -15,14 +15,14 @@ import { cn } from '@/lib/utils';
 
 interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {}
 
-const userAuthSchema = z
+const loginSchema = z
   .object({
-    email: z.string().email(),
-    password: z.string().min(6),
+    email: z.string().email().nonempty('Email is required'),
+    password: z.string().min(6, 'Password must be at least 6 characters'),
   })
   .required();
 
-type FormData = z.infer<typeof userAuthSchema>;
+type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginForm({ className, ...props }: UserAuthFormProps) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -30,16 +30,16 @@ export function LoginForm({ className, ...props }: UserAuthFormProps) {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<FormData>({
-    resolver: zodResolver(userAuthSchema),
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
   });
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
 
-    const result = await signIn('credentials', {
+    const response = await signIn('credentials', {
       email: data.email.toLowerCase(),
       password: data.password,
       redirect: false,
@@ -48,7 +48,7 @@ export function LoginForm({ className, ...props }: UserAuthFormProps) {
 
     setIsLoading(false);
 
-    if (!result?.ok || result?.error) {
+    if (!response?.ok || response?.error) {
       return toast({
         title: 'Something went wrong',
         description: 'Your log in request failed. Please try again.',
