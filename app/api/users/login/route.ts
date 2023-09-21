@@ -14,8 +14,8 @@ export async function POST(req: Request) {
 
   try {
     const user = await getUserByEmail(credentials.email);
-    if (user.length === 0) {
-      throw new Error('User matching email address not found.');
+    if (user.length === 0 || !user[0].password) {
+      throw new Error('Credentials user matching email address not found.');
     }
 
     const validPassword = await compare(credentials.password, user[0].password);
