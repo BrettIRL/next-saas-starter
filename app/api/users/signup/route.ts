@@ -1,5 +1,6 @@
 import { hash } from 'bcryptjs';
 import { NextResponse } from 'next/server';
+import { v4 as uuid } from 'uuid';
 import { insertUser } from '@/app/db/repositories/users';
 
 export async function POST(req: Request) {
@@ -14,8 +15,9 @@ export async function POST(req: Request) {
   }
 
   try {
+    const id = uuid();
     const hashedPassword = await hash(password, 10);
-    const user = await insertUser({ email, password: hashedPassword });
+    const user = await insertUser({ id, email, password: hashedPassword });
     return NextResponse.json({ user }, { status: 201 });
   } catch (error) {
     return NextResponse.json(

@@ -42,6 +42,7 @@ export function SignupForm({ className, ...props }: UserAuthFormProps) {
       });
 
       if (!response.ok) {
+        setIsLoading(false);
         return toast({
           title: 'Something went wrong',
           description: 'Your sign up request failed. Please try again.',

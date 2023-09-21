@@ -4,7 +4,7 @@ import { drizzle } from 'drizzle-orm/vercel-postgres';
 import { users } from '@/app/db/schema/users';
 import type { User, NewUser } from '@/app/db/schema/users';
 
-const db = drizzle(sql);
+export const db = drizzle(sql);
 
 export async function getUserByEmail(email: string): Promise<User[]> {
   return db.select().from(users).where(eq(users.email, email));

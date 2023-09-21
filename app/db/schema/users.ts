@@ -4,23 +4,21 @@ import {
   timestamp,
   integer,
   primaryKey,
-  serial,
 } from 'drizzle-orm/pg-core';
 
-export const users = pgTable('users', {
-  id: serial('id').notNull().primaryKey(),
-  firstName: text('first_name'),
-  lastName: text('last_name'),
+export const users = pgTable('user', {
+  id: text('id').notNull().primaryKey(),
+  name: text('name'),
   email: text('email').unique().notNull(),
-  password: text('password').notNull(),
+  password: text('password'),
   image: text('image'),
   verifiedAt: timestamp('emailVerified', { mode: 'date' }),
 });
 
 export const accounts = pgTable(
-  'accounts',
+  'account',
   {
-    userId: serial('userId')
+    userId: text('userId')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     type: text('type').notNull(),
@@ -39,16 +37,16 @@ export const accounts = pgTable(
   }),
 );
 
-export const sessions = pgTable('sessions', {
+export const sessions = pgTable('session', {
   sessionToken: text('sessionToken').notNull().primaryKey(),
-  userId: serial('userId')
+  userId: text('userId')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
   expires: timestamp('expires', { mode: 'date' }).notNull(),
 });
 
 export const verificationTokens = pgTable(
-  'verificationTokens',
+  'verificationToken',
   {
     identifier: text('identifier').notNull(),
     token: text('token').notNull(),
