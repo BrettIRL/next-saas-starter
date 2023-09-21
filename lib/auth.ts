@@ -1,7 +1,6 @@
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import type { AuthOptions } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import GoogleProvider from 'next-auth/providers/google';
 import { db } from '@/app/db/repositories/users';
 
 export const authOptions: AuthOptions = {
@@ -39,10 +38,6 @@ export const authOptions: AuthOptions = {
 
         return user;
       },
-    }),
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
     }),
   ],
   pages: {
